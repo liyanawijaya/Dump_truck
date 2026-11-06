@@ -1,4 +1,6 @@
+import omni.usd
 
+stage = omni.usd.get_context().get_stage()
 import numpy as np
 
 from isaacsim.core.api import World
