@@ -1,4 +1,3 @@
-
 import asyncio
 import numpy as np
 import omni.usd
@@ -14,13 +13,13 @@ from omni.isaac.wheeled_robots.controllers.differential_controller import Differ
 # 1. Robot configuration
 # ---------------------------------------
 
-ROBOT_PATH = "/World/MyRobot"
+ROBOT_PATH = "/Jackal"
 
 WHEEL_JOINTS = [
-    "front_left_joint",
-    "rear_left_joint",
-    "front_right_joint",
-    "rear_right_joint"
+    "front_left_wheel_joint",
+    "rear_left_wheel_joint",
+    "front_right_wheel_joint",
+    "rear_right_wheel_joint"
 ]
 
 WHEEL_RADIUS = 0.10
