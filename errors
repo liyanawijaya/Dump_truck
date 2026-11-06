@@ -1,0 +1,20 @@
+2026-11-06 04:00:40 [7,061,638ms] [Error] [asyncio] Task exception was never retrieved
+future: <Task finished name='Task-115756' coro=<setup_robot() done, defined at c:/users/nipun/appdata/local/temp/xa78.0/script_1793937638.py:33> exception=KeyError('joint_left')>
+Traceback (most recent call last):
+  File "c:/users/nipun/appdata/local/temp/xa78.0/script_1793937638.py", line 69, in setup_robot
+    await world.reset_async()
+  File "d:/nipun/isaac_sim-2023.1.1/exts/omni.isaac.core/omni/isaac/core/world/world.py", line 520, in reset_async
+    await self.reset_async_no_set_up_scene(soft=soft)
+  File "d:/nipun/isaac_sim-2023.1.1/exts/omni.isaac.core/omni/isaac/core/world/world.py", line 481, in reset_async_no_set_up_scene
+    self._scene._finalize(self.physics_sim_view)
+  File "d:/nipun/isaac_sim-2023.1.1/exts/omni.isaac.core/omni/isaac/core/scenes/scene.py", line 322, in _finalize
+    robot.initialize(physics_sim_view)
+  File "d:/nipun/isaac_sim-2023.1.1/exts/omni.isaac.wheeled_robots/omni/isaac/wheeled_robots/robots/wheeled_robot.py", line 154, in initialize
+    self._wheel_dof_indices = [
+  File "d:/nipun/isaac_sim-2023.1.1/exts/omni.isaac.wheeled_robots/omni/isaac/wheeled_robots/robots/wheeled_robot.py", line 155, in <listcomp>
+    self.get_dof_index(self._wheel_dof_names[i]) for i in range(len(self._wheel_dof_names))
+  File "d:/nipun/isaac_sim-2023.1.1/exts/omni.isaac.core/omni/isaac/core/articulations/articulation.py", line 314, in get_dof_index
+    return self._articulation_view.get_dof_index(dof_name=dof_name)
+  File "d:/nipun/isaac_sim-2023.1.1/exts/omni.isaac.core/omni/isaac/core/articulations/articulation_view.py", line 445, in get_dof_index
+    return self._dof_indices[dof_name]
+KeyError: 'joint_left'
