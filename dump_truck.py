@@ -1,67 +1,89 @@
+
+import asyncio
+import numpy as np
 import omni.usd
 
-stage = omni.usd.get_context().get_stage()
-import numpy as np
+from omni.isaac.core import World
+from omni.isaac.core.utils.types import ArticulationAction
 
-from isaacsim.core.api import World
-from isaacsim.core.utils.types import ArticulationAction
-
-from isaacsim.robot.wheeled_robots.robots import WheeledRobot
-from isaacsim.robot.wheeled_robots.controllers.differential_controller import DifferentialController
+from omni.isaac.wheeled_robots.robots import WheeledRobot
+from omni.isaac.wheeled_robots.controllers.differential_controller import DifferentialController
 
 
 # ---------------------------------------
-# 1. Connect to existing robot
+# 1. Robot configuration
 # ---------------------------------------
 
-world = World(stage_units_in_meters=1.0)
+ROBOT_PATH = "/World/MyRobot"
 
-robot = world.scene.add(
-    WheeledRobot(
-        prim_path="/World/MyRobot",
-        name="my_rover",
-        wheel_dof_names=[
-            "front_left_joint",
-            "rear_left_joint",
-            "front_right_joint",
-            "rear_right_joint"
-        ]
-    )
-)
+WHEEL_JOINTS = [
+    "front_left_joint",
+    "rear_left_joint",
+    "front_right_joint",
+    "rear_right_joint"
+]
+
+WHEEL_RADIUS = 0.10
+WHEEL_BASE = 0.40
 
 
 # ---------------------------------------
-# 2. Define DifferentialController
+# 2. Initialise robot and simulation
 # ---------------------------------------
 
-controller = DifferentialController(
-    name="rover_controller",
-    wheel_radius=0.10,
-    wheel_base=0.40
-)
+async def setup_robot():
 
+    stage = omni.usd.get_context().get_stage()
 
-# ---------------------------------------
-# 3. Initialise robot articulation
-# ---------------------------------------
+    # Check that the robot exists
+    robot_prim = stage.GetPrimAtPath(ROBOT_PATH)
 
-world.reset()
+    if not robot_prim.IsValid():
+        print("ERROR: Robot not found:", ROBOT_PATH)
+        return
 
+    # Clear previous World Python instance
+    if World.instance() is not None:
+        World.instance().clear_instance()
 
-# ---------------------------------------
-# 4. Define robot movement function
-# ---------------------------------------
+    world = World(stage_units_in_meters=1.0)
 
-def drive_robot(linear, angular):
+    await world.initialize_simulation_context_async()
 
-    action = controller.forward(
-        command=np.array([linear, angular])
+    # Connect to robot already in USD stage
+    robot = world.scene.add(
+        WheeledRobot(
+            prim_path=ROBOT_PATH,
+            name="my_rover",
+            wheel_dof_names=WHEEL_JOINTS
+        )
     )
 
-    left, right = action.joint_velocities
+    # Create differential controller
+    controller = DifferentialController(
+        name="rover_controller",
+        wheel_radius=WHEEL_RADIUS,
+        wheel_base=WHEEL_BASE
+    )
 
-    robot.apply_wheel_actions(
-        ArticulationAction(
+    # Initialise physics and articulation
+    await world.reset_async()
+
+    print("Robot initialised successfully!")
+
+    # ---------------------------------------
+    # 3. Drive function
+    # ---------------------------------------
+
+    def drive_robot(linear, angular):
+
+        action = controller.forward(
+            command=np.array([linear, angular])
+        )
+
+        left, right = action.joint_velocities
+
+        wheel_action = ArticulationAction(
             joint_velocities=np.array([
                 left,
                 left,
@@ -69,31 +91,48 @@ def drive_robot(linear, angular):
                 right
             ])
         )
+
+        robot.apply_wheel_actions(wheel_action)
+
+    # ---------------------------------------
+    # 4. Physics callback
+    # ---------------------------------------
+
+    elapsed = 0.0
+    finished = False
+
+    def robot_control_step(dt):
+        nonlocal elapsed, finished
+
+        elapsed += dt
+
+        if elapsed < 4.0:
+            drive_robot(0.4, 0.0)
+
+        elif elapsed < 6.0:
+            drive_robot(0.0, 0.5)
+
+        elif elapsed < 10.0:
+            drive_robot(0.4, 0.0)
+
+        else:
+            drive_robot(0.0, 0.0)
+
+            if not finished:
+                print("Robot movement completed!")
+                finished = True
+
+    world.add_physics_callback(
+        "rover_control",
+        callback_fn=robot_control_step
     )
 
+    # Start simulation
+    await world.play_async()
+
 
 # ---------------------------------------
-# 5. Run robot
+# 5. Execute from Script Editor
 # ---------------------------------------
 
-for step in range(840):
-
-    if step < 240:
-        # Move forward
-        drive_robot(0.4, 0.0)
-
-    elif step < 360:
-        # Turn left
-        drive_robot(0.0, 0.5)
-
-    elif step < 600:
-        # Move forward
-        drive_robot(0.4, 0.0)
-
-    else:
-        # Stop
-        drive_robot(0.0, 0.0)
-
-    world.step(render=True)
-
-print("Robot movement completed")
+asyncio.ensure_future(setup_robot())
